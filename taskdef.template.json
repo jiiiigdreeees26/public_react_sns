@@ -1,0 +1,10 @@
+[
+  {
+    "name": "react-app",
+    "image": "<FRONTEND_IMAGE>",
+    "essential": true,
+    "portMappings": [
+      { "containerPort": 3000 }
+    ]
+  }
+]

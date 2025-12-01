@@ -1,0 +1,71 @@
+name: Push image to ECR
+
+on:
+  push:
+    branches: [develop]
+
+env:
+  AWS_REGION: us-east-1
+  FRONTEND_REPO: my-react-app
+  ECS_SERVICE: my-react-app-service
+  ECS_CLUSTER: my-cluster
+  TASK_DEFINITION: taskdef.json
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout # これをするとActions実行環境のルートにリポジトリがクローンされる
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set image tags
+      id: vars
+      run: echo "TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV # $GITHUB_SHAは最新コミットのハッシュ値
+
+    - name: Create .env.loacl and add secret valiables to .env.local
+      run: |
+        echo "NEXT_PUBLIC_TEST_USER_EMAIL1=${{ secrets.NEXT_PUBLIC_TEST_USER_EMAIL1 }}" >> .env.local
+        echo "NEXT_PUBLIC_TEST_USER_EMAIL2=${{ secrets.NEXT_PUBLIC_TEST_USER_EMAIL2 }}" >> .env.local
+        echo "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AUTH0_CLIENT_ID }}" >> .env.local
+        echo "NEXT_PUBLIC_AUTH0_CLIENT_SECRET=${{ secrets.NEXT_PUBLIC_AUTH0_CLIENT_SECRET }}" >> .env.local
+        echo "NEXT_PUBLIC_AUTH0_ISSUER=${{ secrets.NEXT_PUBLIC_AUTH0_ISSUER }}" >> .env.local
+        echo "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.NEXT_PUBLIC_AUTH0_AUDIENCE }}" >> .env.local
+        echo "NEXT_PUBLIC_NEXTAUTH_SECRET=${{ secrets.NEXT_PUBLIC_NEXTAUTH_SECRET }}" >> .env.local
+
+    - name: Build and Push frontend image
+      run: |
+        docker build -f dockerfile.prod -t $FRONTEND_REPO:$TAG .
+        docker images
+        docker tag $FRONTEND_REPO:$TAG ${{ steps.login-ecr.outputs.registry }}/$FRONTEND_REPO:$TAG
+        docker push ${{ steps.login-ecr.outputs.registry }}/$FRONTEND_REPO:$TAG
+
+    # - name: yarn test実行
+    #   run: |
+    #     docker run --rm ${{ steps.login-ecr.outputs.registry }}/$FRONTEND_REPO:$TAG sh -c "yarn install && yarn test" 
+
+    # ECSは常時停止しているため以下コメントアウト
+    # - name: Render ECS task definition
+    #   run: |
+    #     sed -e "s|<FRONTEND_IMAGE>|${{ steps.login-ecr.outputs.registry }}/$FRONTEND_REPO:$TAG|" \
+    #         taskdef.template.json > $TASK_DEFINITION
+
+    # - name: Deploy to ECS
+    #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+    #   with:
+    #     task-definition: ${{ env.TASK_DEFINITION }}
+    #     service: ${{ env.ECS_SERVICE }}
+    #     cluster: ${{ env.ECS_CLUSTER }}
+    #     wait-for-service-stability: true
