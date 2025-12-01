@@ -86,5 +86,5 @@ USER_ID=
 ### 構成図
 ![](./aws.drawio.svg)
 ### 関連リポジトリ
-[terraform](https://github.com/jiiiigdreeees26/public_terraform_for_sns)
+[terraform](https://github.com/jiiiigdreeees26/public_terraform_sns)
 [Go API](https://github.com/jiiiigdreeees26/public_go_sns_api)
