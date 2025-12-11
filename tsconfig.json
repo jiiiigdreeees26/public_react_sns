@@ -46,6 +46,7 @@
   },
   "include": [
     "src/**/*",
+    "types/*",
     "vitest.config.mts",
     "vitest.setup.ts"
   ],
