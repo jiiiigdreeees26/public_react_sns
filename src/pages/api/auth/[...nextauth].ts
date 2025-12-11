@@ -39,6 +39,9 @@ export default NextAuth({
       return token;
     },
     async session({ session, token, user }) {
+      if (!session.user.id) {
+        session.user.id = 0;
+      }
       return {
         ...session,
         jwt: token,
