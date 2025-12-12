@@ -18,13 +18,14 @@ import { FetchPostsUseCase } from '../../../domain/usecase/post/FetchPostsUseCas
 import { AppDispatch } from '../../../store/store';
 import { UserRepositoryImpl } from '../../../data/repositories/UserRepository';
 import { FetchUsersUseCase } from '../../../domain/usecase/user/FetchUsersUseCase';
+import { FetchUserByAuth0SubUseCase } from '@/domain/usecase/user/FetchUserByAuth0SubUseCase';
 
 export const Profile = () => {
   const { data: session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
-  const loginUser = useSelector(selectUser).users.filter(user => user.email === session?.user?.email)[0];
+  const { users, loginUserId } = useSelector(selectUser);
+  const loginUser = users.filter(user => user.id === loginUserId)[0];
   const { posts, loading, error } = useSelector(selectPosts);
-  const users = useSelector(selectUser).users;
   const followings = useSelector(selectfollowing).followings;
   // タブ切り替え
   const [activeTab, setActiveTab] = useState(1);
@@ -40,20 +41,28 @@ export const Profile = () => {
 
   const userRepositoryImpl = new UserRepositoryImpl(dispatch);;
   const fetchUsersUseCase = new FetchUsersUseCase(userRepositoryImpl);
+  const fetchUserByAuth0SubUseCase = new FetchUserByAuth0SubUseCase(userRepositoryImpl);
 
   const presenter = new ProfilePresenter();
-  const viewModel = presenter.toViewModel(posts, users,followings, loginUser);
+  const viewModel = presenter.toViewModel(posts, users,followings, loginUser?.id);
 
-  useEffect(() => {
-    fetchFollowingByUserIdUseCase.execute(loginUser?.id || 0).catch((err) => console.error(err));
-    fetchPostsUseCase.execute().catch((err) => console.error(err));
-    fetchCommentsUsecase.execute().catch((err) => console.error(err));
-  }, [loginUser]);
-
-  useEffect(() => {
-    if (session?.expires) {
-      fetchUsersUseCase.execute().catch((err) => console.error(err));
+  const handleFetch = async () => {
+    try {
+      await fetchPostsUseCase.execute();
+      await fetchCommentsUsecase.execute();
+      if (users.length  === 0 ) {
+        await fetchUsersUseCase.execute();  
+      }
+      if (session?.expires) {
+        const user = await fetchUserByAuth0SubUseCase.execute(session?.jwt?.accessToken || '');
+        await fetchFollowingByUserIdUseCase.execute(loginUserId || 0);
+      }
+    } catch(err) {
+      console.error(err);
     }
+  };
+  useEffect(() => {
+    handleFetch();
   }, [session]);
   if (!session) return <p>サインインが必要です。</p>;
 

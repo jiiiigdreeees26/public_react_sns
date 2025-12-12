@@ -5,7 +5,7 @@ import { Grid, GridCellProps } from 'react-virtualized';
 import { PostListPresenter } from '../../presenters/PostListPresenter';
 import { PostRepositoryImpl } from '../../../data/repositories/PostRepository';
 import { AppDispatch } from '../../../store/store';
-import { selectUser } from '../../../store/userSlice';
+import { selectUser, setLoginUserId } from '../../../store/userSlice';
 import { FetchPostsUseCase } from '../../../domain/usecase/post/FetchPostsUseCase';
 import { selectfollowing } from '../../../store/followingSlice';
 import { selectPosts } from '../../../store/postsSlice';
@@ -17,18 +17,17 @@ import { FollowingRepositoryImpl } from '../../../data/repositories/FollowingRep
 import { FetchFollowingsUseCase } from '../../../domain/usecase/following/FetchFollowingsUseCase';
 import { UserRepositoryImpl } from '../../../data/repositories/UserRepository';
 import { FetchUsersUseCase } from '../../../domain/usecase/user/FetchUsersUseCase';
-import { CreateUserUseCase } from '@/domain/usecase/user/CreateUserUseCase';
+import { CreateUserUseCase } from '../../..//domain/usecase/user/CreateUserUseCase';
 import { logger } from '../../../../lib/logger';
-
-
+import { FetchUserByAuth0SubUseCase } from '../../../domain/usecase/user/FetchUserByAuth0SubUseCase';
 
 export const PostList = () => {
   const { data: session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
   const { posts, loading, error } = useSelector(selectPosts);
-  const users = useSelector(selectUser).users;
+  const {users, loginUserId} = useSelector(selectUser);
   const followings = useSelector(selectfollowing).followings;
-  const loginUser = users.find((user) => user.email === session?.user?.email);
+  const loginUser = users.find((user) => user.id === loginUserId);
 
   const [activeTab, setActiveTab] = useState(1);
   const [width, setWidth] = useState(1300);
@@ -41,6 +40,8 @@ export const PostList = () => {
   const fetchFollowingsUseCase = new FetchFollowingsUseCase(followRepository);
   const userRepository = new UserRepositoryImpl(dispatch);
   const fetchUsersUseCase = new FetchUsersUseCase(userRepository);
+  const fetchUserByAuth0SubUseCase = new FetchUserByAuth0SubUseCase(userRepository);
+  const createUserUseCase = new CreateUserUseCase(userRepository);
 
   useEffect(() => {
     fetchPostsUseCase.execute().catch((err) => console.error(err));
@@ -49,24 +50,35 @@ export const PostList = () => {
     fetchUsersUseCase.execute().catch((err) => console.error(err));
   }, [dispatch]);
 
-  useEffect(() => {
-    if (session?.expires) {
-      fetchUsersUseCase.execute()
-        .then((users) => {
-          const isExist = users.some(user => user.email === session?.user?.email);
-          if (!isExist) {
-            const createUserUseCase = new CreateUserUseCase(userRepository);
-            createUserUseCase
-              .execute(session?.user?.name || '', session?.user?.email || '', (session as any)?.jwt?.accessToken)
-              .catch((err) => console.error(err));
-            logger.info({
-              event: 'new_user_registration',
-              user: session?.user?.name
-            });
-          }
-        })
-        .catch((err) => console.error(err));
+  const handleUsers = async () => {
+    try {
+      if (session?.user) {
+        const user = await fetchUserByAuth0SubUseCase.execute(session?.jwt?.accessToken || '');
+        // userがnullなら新規登録する
+        let finalUserId = 0;
+        if (!user) {
+          const newUser = await createUserUseCase.execute(
+            session.user.name || '',
+            session.user.email || '',
+            session?.jwt?.sub || '',
+            session?.jwt?.accessToken || '');
+          logger.info({
+            event: 'new_user_registration',
+            user: session?.user?.name
+          });
+          finalUserId = newUser.id;
+        }
+        if (user) {
+          finalUserId = user.id;
+        }
+        dispatch(setLoginUserId(finalUserId)); 
+      }
+    } catch(err) {
+      console.error(err);
     }
+  }
+  useEffect(() => {
+    handleUsers();
   }, [session]);
 
   useEffect(() => {

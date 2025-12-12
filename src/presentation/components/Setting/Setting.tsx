@@ -9,7 +9,8 @@ import { selectUser } from '../../../store/userSlice';
 export const Setting = () => {
   const router = useRouter();
   const { data: session, update } = useSession();
-  const loginUser = useSelector(selectUser).users.filter(user => user.email === session?.user?.email)[0];
+  const { users, loginUserId } = useSelector(selectUser);
+  const loginUser = users.filter(user => user.id === loginUserId)[0];
   const dispatch = useDispatch();
   const [newUsername, setNewUsername] = useState(loginUser?.name);
 
@@ -23,10 +24,10 @@ export const Setting = () => {
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     updateUserNameUseCase.execute(
-      loginUser?.id,
+      loginUserId || 0,
       newUsername || '' ,
-      loginUser?.email || '',
-      session?.jwt?.accessToken || "");
+      loginUser?.email || (session?.user?.email || ''),
+      session?.jwt?.accessToken || '');
     await update({
       ...session,
       user: { ...session?.user, name: newUsername },

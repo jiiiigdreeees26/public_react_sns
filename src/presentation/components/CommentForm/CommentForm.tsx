@@ -12,7 +12,8 @@ export const CommentForm = () => {
   const [content, setContent] = useState('');
   const dispatch = useDispatch<AppDispatch>();
   const { data: session } = useSession();
-  const loginUser = useSelector(selectUser).users.filter(user => user.email === session?.user?.email)[0];
+  const { users, loginUserId } = useSelector(selectUser);
+  const loginUser = users.filter(user => user.id === loginUserId)[0];
   const params = useParams();
   const postId: number = typeof(params?.postId) === "string" ? Number(params.postId) : 0;
   const { loading, error } = useSelector(selectPosts);
@@ -24,7 +25,7 @@ export const CommentForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-    addCommentUsecase.execute(content, postId, loginUser?.id, session?.jwt?.accessToken || "");
+    addCommentUsecase.execute(content, postId, loginUser?.id, session?.jwt?.accessToken || '');
     setContent(''); // フォームをリセット
   };
 

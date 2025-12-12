@@ -4,8 +4,9 @@ import { selectUser } from '../store/userSlice';
 
 export const AuthButton = () => {
   const { data: session } = useSession();
-  const loginUser = useSelector(selectUser).users.filter(user => user.email === session?.user?.email)[0];
-
+  const { users, loginUserId } = useSelector(selectUser);
+  const loginUser = users.filter(user => user.id === loginUserId)[0];
+  
   if (session) {
     return (
       <div>

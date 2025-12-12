@@ -19,7 +19,8 @@ import { FetchCommentsUseCase } from "../../../domain/usecase/comment/FetchComme
 export const UserDetail = () => {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const loginUser = useSelector(selectUser).users.filter(user => user.email === session?.user?.email)[0];
+  const { users, loginUserId } = useSelector(selectUser);
+  const loginUser = users.filter(user => user.id === loginUserId)[0];
   const dispatch = useDispatch();
   const { posts, loading, error } = useSelector(selectPosts);
   const followings = useSelector(selectfollowing).followings;
@@ -50,9 +51,9 @@ export const UserDetail = () => {
           .filter(
             following => following.followUserId === loginUser.id && following.followedUserId === displayUser.id
           )[0].id,
-        session?.jwt?.accessToken || "");
+        session?.jwt?.accessToken || '');
     } else {
-      addFollowingUseCase.execute(loginUser.id, displayUser.id, session?.jwt?.accessToken || "").catch((err) => console.error(err));
+      addFollowingUseCase.execute(loginUser.id, displayUser.id, session?.jwt?.accessToken || '').catch((err) => console.error(err));
     }
   };
 
