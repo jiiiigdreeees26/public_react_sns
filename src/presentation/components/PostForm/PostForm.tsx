@@ -37,7 +37,7 @@ export const PostForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addPostUseCase.execute(content, loginUser?.id, (session as any)?.jwt?.accessToken);
+      await addPostUseCase.execute(content, loginUser?.id, session?.jwt?.accessToken || "");
       setContent(viewModel.resetForm()); // フォームをリセット
     } catch (error) {
       console.error('投稿エラー:', error);

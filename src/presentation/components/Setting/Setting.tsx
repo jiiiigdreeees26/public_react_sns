@@ -26,7 +26,7 @@ export const Setting = () => {
       loginUser?.id,
       newUsername || '' ,
       loginUser?.email || '',
-      (session as any)?.jwt?.accessToken);
+      session?.jwt?.accessToken || "");
     await update({
       ...session,
       user: { ...session?.user, name: newUsername },

@@ -50,9 +50,9 @@ export const UserDetail = () => {
           .filter(
             following => following.followUserId === loginUser.id && following.followedUserId === displayUser.id
           )[0].id,
-        (session as any)?.jwt?.accessToken);
+        session?.jwt?.accessToken || "");
     } else {
-      addFollowingUseCase.execute(loginUser.id, displayUser.id, (session as any)?.jwt?.accessToken).catch((err) => console.error(err));
+      addFollowingUseCase.execute(loginUser.id, displayUser.id, session?.jwt?.accessToken || "").catch((err) => console.error(err));
     }
   };
 

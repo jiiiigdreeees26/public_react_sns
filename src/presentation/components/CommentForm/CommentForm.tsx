@@ -24,7 +24,7 @@ export const CommentForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-    addCommentUsecase.execute(content, postId, loginUser?.id, (session as any)?.jwt?.accessToken);
+    addCommentUsecase.execute(content, postId, loginUser?.id, session?.jwt?.accessToken || "");
     setContent(''); // フォームをリセット
   };
 
