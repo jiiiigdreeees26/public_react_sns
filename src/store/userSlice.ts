@@ -1,19 +1,23 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createAction, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from './store';
 import { User } from '../domain/entities/User';
-import { fetchUsers, fetchUserById, createUser, updateUserName } from '../api/userApi';
+import { fetchUsers, fetchUserById, createUser, updateUserName, fetchUserByAuth0Sub } from '../api/userApi';
 
 interface UsersState {
   users: User[];
+  loginUserId: number | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: UsersState = {
   users: [],
+  loginUserId: null,
   loading: false,
   error: null
 };
+
+export const setLoginUserId = createAction<number | null>('user/setLoginUserId');
 
 export const userSlice = createSlice({
   name: 'user',
@@ -34,17 +38,42 @@ export const userSlice = createSlice({
         state.loading = false;
         state.error = action.error.message ?? 'エラーが発生しました';
       })
-      .addCase(fetchUserById.fulfilled, (state, action) => {
+      .addCase(fetchUserByAuth0Sub.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserByAuth0Sub.fulfilled, (state, action) => {
         state.loading = false;
-        state.users.push(action.payload);
+        let isExist = false;
+        if (action.payload) {
+          state.users.forEach(user => {
+            if (user.id === action.payload.id) {
+              user.id = action.payload.id;
+              user.name = action.payload.name;
+              isExist = true;
+              return;
+            }
+          });
+          if (!isExist) {
+            state.users.push(action.payload);
+          }
+        }
+      })
+      .addCase(fetchUserByAuth0Sub.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message ?? 'エラーが発生しました';
       })
       .addCase(createUser.fulfilled, (state, action) => {
         state.loading = false;
         state.users.push(action.payload);
-      }).addCase(updateUserName.fulfilled, (state, action) => {
+      })
+      .addCase(updateUserName.fulfilled, (state, action) => {
         state.loading = false;
         const user = state.users.find((p) => p.id === action.payload.id);
         if (user) user.name = action.payload.name;
+      })
+      .addCase(setLoginUserId, (state, action: PayloadAction<number | null>) => {
+        state.loginUserId = action.payload;
       });
     },
 });

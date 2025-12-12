@@ -5,10 +5,10 @@ import { selectUser } from '../store/userSlice';
 import { useSession } from 'next-auth/react';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { data: session, status } = useSession();
-  const currentUser = useSelector(selectUser).users.filter(
-    (v) => v.email === session?.user?.email,
-  )[0];
+  const { data: session } = useSession();
+  const { users, loginUserId } = useSelector(selectUser);
+  const loginUser = users.filter(user => user.id === loginUserId)[0];
+
   return (
     <div className="min-h-screen flex flex-col transition-all duration-500 ease-in-out">
       {/* ヘッダー */}
@@ -26,7 +26,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 About
               </Link>
             </li>
-            {currentUser?.id && (
+            {loginUser?.name && (
               <li>
                 <Link href="/profile" className="hover:underline">
                   Profile

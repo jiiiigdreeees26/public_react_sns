@@ -4,6 +4,7 @@ import { User } from "../domain/entities/User";
 interface createUserArgs {
   name: string;
   email: string;
+  auth0_sub: string;
   accessToken: string;
 }
 export const createUser = createAsyncThunk(
@@ -17,7 +18,8 @@ export const createUser = createAsyncThunk(
       },
       body: JSON.stringify({
         name: createUserArgs.name,
-        email: createUserArgs.email
+        email: createUserArgs.email,
+        auth0_sub: createUserArgs.auth0_sub
       }),
     });
 
@@ -30,8 +32,8 @@ export const createUser = createAsyncThunk(
 interface updateUserNameArgs {
   id: number;
   name: string;
-  email: string
-  accessToken: string
+  email: string;
+  accessToken: string;
 }
 export const updateUserName = createAsyncThunk(
   'users/updateUserName',
@@ -70,3 +72,22 @@ export const fetchUserById= createAsyncThunk('users/fetchUserById', async (fetch
   if (!response.ok) throw new Error('ユーザーの取得に失敗しました');
   return (await response.json()) as User;
 }); 
+
+interface fetchUserByAuth0SubArgs {
+  accessToken: string;
+}
+export const fetchUserByAuth0Sub = createAsyncThunk(
+  'users/fetchUserByAuth0Sub',
+  async (fetchUserByAuth0SubArgs: fetchUserByAuth0SubArgs) => {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/backend/userinfo', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' +  (fetchUserByAuth0SubArgs.accessToken || '')
+      }
+    });
+
+    if (!response.ok) throw new Error('ユーザーの取得に失敗しました');
+    return (await response.json()) as User;
+  },
+);

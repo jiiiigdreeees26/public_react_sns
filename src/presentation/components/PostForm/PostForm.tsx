@@ -12,8 +12,8 @@ export const PostForm = () => {
   const [content, setContent] = useState('');
   const { data: session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
-  const users = useSelector(selectUser).users;
-  const loginUser = users.find((user) => user.email === session?.user?.email);
+  const { users, loginUserId} = useSelector(selectUser);
+  const loginUser = users.find((user) => user.id === loginUserId);
   const { loading, error } = useSelector(selectPosts);
   // ユースケースとプレゼンターの初期化
   const postRepository = new PostRepositoryImpl(dispatch);
@@ -37,7 +37,7 @@ export const PostForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addPostUseCase.execute(content, loginUser?.id, (session as any)?.jwt?.accessToken);
+      await addPostUseCase.execute(content, loginUser?.id, session?.jwt?.accessToken || '');
       setContent(viewModel.resetForm()); // フォームをリセット
     } catch (error) {
       console.error('投稿エラー:', error);

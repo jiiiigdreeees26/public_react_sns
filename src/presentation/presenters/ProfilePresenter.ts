@@ -13,19 +13,19 @@ export class ProfilePresenter {
     posts: Post[],
     users: User[],
     followings: Following[],
-    loginUser: User | undefined,
+    loginUserId: number | undefined,
   ): ProfileViewModel {
     const loginUserfollowingUsers = users.filter((user) =>
       followings.filter(
-        (following) => following.followUserId === loginUser?.id
+        (following) => following.followUserId === loginUserId
       ).some(v => v.followedUserId === user.id));
 
     const loginUserFollowers = users.filter((user) => 
       followings.filter(
-        (following) => following.followedUserId === loginUser?.id
+        (following) => following.followedUserId === loginUserId
       ).some(v => v.followUserId === user.id));
 
-    const userPosts = posts.filter((post) => post.userId === loginUser?.id);
+    const userPosts = posts.filter((post) => post.userId === loginUserId);
     return {
       loginUserfollowingUsers,
       loginUserFollowers,
